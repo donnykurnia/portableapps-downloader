@@ -2,7 +2,7 @@
 
 ###############################################################################
 #
-# PortableApps Downloader 0.0.2
+# PortableApps Downloader 0.0.4
 #
 # Copyright (C) 2011 Donny Kurnia <donnykurnia@gmail.com>
 #
@@ -81,7 +81,7 @@ def get_apps(news_pages, existing_files)
       p "Cannot find download link in #{app_page_link}"
     else
       if app_link.include? "bouncer"
-        app_link = url_unescape( app_link.gsub( /\/bouncer\?t\=/, '' ) )
+        app_link = url_unescape( app_link.gsub( /^.*\/bouncer\?t\=/, '' ) )
       end
 
       unless existing_files.any? { |file| app_link.include? file } or DL_LINKS.include?(app_link)
