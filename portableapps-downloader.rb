@@ -38,9 +38,9 @@ def get_news_pages(page, news_pages, page_cache)
   doc = Nokogiri::HTML(open(page))
   doc.search('//td[@class = "views-field views-field-title"]/a[@href]').each do |m|
     news_page = BASE_URL + m[:href]
-    unless news_page.nil? or news_page.include?("beta")
+    cache_hit = page_cache.include? news_page
+    unless news_page.nil? or news_page.include?("beta") or cache_hit
       news_pages << news_page
-      cache_hit = page_cache.include? news_page
     end
   end
   next_page_link = doc.search('//a[@title = "Go to next page"]')[0]
@@ -57,20 +57,33 @@ def url_unescape(string)
 end
 
 def get_apps(news_pages, existing_files)
-  begin
-    news_pages.each_with_index do |page, i|
-  
-      p "Processing #{page} #{i+1}/#{news_pages.count}"
-      doc = Nokogiri::HTML(open(page))
-      app_page_link = doc.search('//div[@id = "maincontent"]/div[@class = "node"]/div[@class = "content"]/p/a')[0][:href]
-  
-      app_doc = Nokogiri::HTML(open(app_page_link))
-      app_link = app_doc.search('//a[@class = "download-link"]')[0][:href]
-  
+  news_pages.each_with_index do |page, i|
+    #get app page
+    p "Processing #{page} #{i+1}/#{news_pages.count}"
+    doc = Nokogiri::HTML(open(page))
+    app_page_link = doc.search('//div[@id = "maincontent"]/div[@class = "node"]/div[@class = "content"]/p/a[@href]')[0][:href]
+
+    #try to find app link
+    app_page_doc = Nokogiri::HTML(open(app_page_link))
+    app_link_element = app_page_doc.search('//a[@class = "download-link"]')
+    if app_link_element.length > 0
+      app_link = app_link_element[0][:href]
+    else
+      app_page_doc.search('//div[@id = "maincontent"]/div[@class = "node"]/div[@class = "content"]/table//a[@href]').each do |link|
+        if link[:href].include? "English"
+          app_link = link[:href]
+          break
+        end
+      end
+    end
+
+    if app_link.nil?
+      p "Cannot find download link in #{app_page_link}"
+    else
       if app_link.include? "bouncer"
         app_link = url_unescape( app_link.gsub( /\/bouncer\?t\=/, '' ) )
       end
-  
+
       unless existing_files.any? { |file| app_link.include? file } or DL_LINKS.include?(app_link)
         DL_LINKS << app_link
         p "Downloading #{app_link}"
@@ -79,8 +92,6 @@ def get_apps(news_pages, existing_files)
         %x(mv #{filename}.tmp #{filename} )
       end
     end
-  rescue Exception => e
-    p "Exception occured! #{e.message}"
   end
 end
 
