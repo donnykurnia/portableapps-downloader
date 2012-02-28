@@ -70,7 +70,7 @@ def get_apps(news_pages, existing_files)
       app_link = app_link_element[0][:href]
     else
       app_page_doc.search('//div[@id = "maincontent"]/div[@class = "node"]/div[@class = "content"]/table//a[@href]').each do |link|
-        if link[:href].include? "English"
+        if link[:href].include? "English.paf"
           app_link = link[:href]
           break
         end
