@@ -39,12 +39,16 @@ def get_news_pages(page, news_pages, page_cache)
   doc.search('//td[@class = "views-field views-field-title"]/a[@href]').each do |m|
     news_page = BASE_URL + m[:href]
     cache_hit = page_cache.include? news_page
-    unless news_page.nil? or news_page.include?("beta") or cache_hit
-      news_pages << news_page
+    if cache_hit
+      break
+    else
+      unless news_page.nil? || news_page.include?("beta")
+        news_pages << news_page
+      end
     end
   end
   next_page_link = doc.search('//a[@title = "Go to next page"]')[0]
-  if next_page_link and ! cache_hit
+  if next_page_link && ! cache_hit
     news_pages = get_news_pages(BASE_URL + next_page_link[:href], news_pages, page_cache)
   end
   news_pages
@@ -88,7 +92,7 @@ def get_apps(news_pages, existing_files)
         DL_LINKS << app_link
         p "Downloading #{app_link}"
         filename = app_link.split("/").last.split("?").first
-        %x(curl -L -C - "#{app_link}" -o #{filename}.tmp )
+        %x(curl -L -C - "#{app_link}" -o #{filename}.tmp --limit-rate 30k )
         %x(mv #{filename}.tmp #{filename} )
       end
     end
